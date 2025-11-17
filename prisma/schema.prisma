@@ -1,0 +1,70 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id String @id @db.Uuid
+  supplier Supplier?
+}
+
+
+model Supplier {
+  id            String   @id @db.Uuid
+  userId        String   @unique @map("user_id") @db.Uuid
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName   String   @map("company_name")
+  contactName   String?  @map("contact_name")
+  contactEmail  String?  @map("contact_email")
+  contactPhone  String?  @map("contact_phone")
+  address       Json?    @db.JsonB
+  contracts     Json?    @db.JsonB
+  version       Int      @default(1)
+  createdAt     DateTime @map("created_at") @default(now())
+  updatedAt     DateTime @map("updated_at") @updatedAt
+
+ 
+  purchaseOrders PurchaseOrder[]
+  audits AuditEntry[]
+  @@map("suppliers")
+  @@index([userId], name: "idx_suppliers_user_id")
+}
+
+
+model PurchaseOrder {
+  id              String   @id @db.Uuid
+  supplierId      String   @map("supplier_id") @db.Uuid
+  supplier        Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  reference       String?
+  status          String   // e.g., "DRAFT", "ISSUED", "ACCEPTED", "SHIPPED", "COMPLETED", "CANCELLED"
+  items           Json     @db.JsonB // Storing items as JSON for simplicity, like in ms-order-main
+  totals          Json?    @db.JsonB
+  shippingAddress Json?    @map("shipping_address") @db.JsonB
+  notes           String?
+  version         Int      @default(1)
+  createdAt       DateTime @map("created_at") @default(now())
+  updatedAt       DateTime @map("updated_at") @updatedAt
+  deleted         Boolean  @map("_deleted") @default(false)
+
+  @@map("purchase_orders")
+  @@index([supplierId], name: "idx_po_supplier_id")
+  @@index([status], name: "idx_po_status")
+}
+
+model AuditEntry {
+  id         String   @id @db.Uuid
+  supplierId String   @map("supplier_id") @db.Uuid
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  actor      String?
+  action     String?
+  details    Json?    @db.JsonB
+  timestamp  DateTime @default(now())
+
+  @@map("audit_entries")
+  @@index([supplierId], name: "idx_audit_entries_supplier_id")
+}

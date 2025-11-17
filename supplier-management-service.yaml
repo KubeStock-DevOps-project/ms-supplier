@@ -1,0 +1,554 @@
+openapi: 3.0.3
+info:
+  title: Supplier & Procurement API
+  description: |
+    Service to handle all interactions with vendors, including profile management
+    and purchase order lifecycle.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:3001
+    description: Local development server
+tags:
+  - name: Suppliers
+    description: Supplier profile management
+  - name: PurchaseOrders
+    description: Purchase Order lifecycle management
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    supplierId:
+      name: supplierId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Supplier UUID
+    poId:
+      name: poId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Purchase Order UUID
+    IfMatch:
+      name: If-Match
+      in: header
+      schema:
+        type: string
+      description: Version token for optimistic concurrency (e.g., "3")
+
+  # Pre-define common responses
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          example: Invalid request payload
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        size:
+          type: integer
+        total:
+          type: integer
+        next_page:
+          type: string
+          nullable: true
+
+    Address:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Supplier Inc."
+        address1:
+          type: string
+          example: "456 Supplier St"
+        city:
+          type: string
+          example: "Supplier City"
+        postal_code:
+          type: string
+          example: "00000"
+        country:
+          type: string
+          example: "LK"
+        phone:
+          type: string
+
+    Supplier:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user_id:
+          type: string
+          format: uuid
+          readOnly: true
+        company_name:
+          type: string
+        contact_name:
+          type: string
+        contact_email:
+          type: string
+          format: email
+        contact_phone:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+        contracts:
+          type: object
+          additionalProperties: true
+        version:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SuppliersListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Supplier'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    CreateSupplierRequest:
+      type: object
+      required: [user_id, company_name]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: The ID of the User this supplier profile belongs to
+        company_name:
+          type: string
+        contact_name:
+          type: string
+        contact_email:
+          type: string
+          format: email
+        contact_phone:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+        contracts:
+          type: object
+          additionalProperties: true
+
+    PurchaseOrder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        supplier_id:
+          type: string
+          format: uuid
+          readOnly: true
+        reference:
+          type: string
+          example: "PO-2025-001"
+        status:
+          type: string
+          example: "ISSUED"
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        totals:
+          type: object
+          additionalProperties: true
+        shipping_address:
+          $ref: '#/components/schemas/Address'
+        notes:
+          type: string
+        version:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    UpdateSupplierRequest:
+      type: object
+      properties:
+        company_name:
+          type: string
+        contact_name:
+          type: string
+        contact_email:
+          type: string
+          format: email
+        contact_phone:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+        contracts:
+          type: object
+          additionalProperties: true
+
+    UpdatePurchaseOrderStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          description: New status (e.g., ACCEPTED, SHIPPED, COMPLETED)
+          example: "ACCEPTED"
+        tracking_number:
+          type: string
+          
+    CreatePurchaseOrderRequest:
+      type: object
+      required: [supplier_id, items]
+      properties:
+        supplier_id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+          example: "PO-2025-001"
+        status:
+          type: string
+          description: "Defaults to ISSUED if not provided"
+          example: "ISSUED"
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        shipping_address:
+          $ref: '#/components/schemas/Address'
+        notes:
+          type: string
+
+    AuditEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        supplier_id:
+          type: string
+          format: uuid
+        actor:
+          type: string
+        action:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+
+paths:
+  /suppliers:
+    post:
+      tags:
+        - Suppliers
+      summary: Register a new supplier
+      description: Creates a new supplier profile and links it to a user_id
+      # security:
+      #   - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSupplierRequest'
+      responses:
+        '201':
+          description: Supplier created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supplier'
+        '400':
+          description: Invalid request payload (validation error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict (e.g., user_id already has a supplier profile)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Suppliers
+      summary: List all suppliers (paginated)
+      # security:
+      #   - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 25
+      responses:
+        '200':
+          description: A paginated list of suppliers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuppliersListResponse'
+
+  /suppliers/{supplierId}:
+    parameters:
+      - $ref: '#/components/parameters/supplierId'
+    get:
+      tags:
+        - Suppliers
+      summary: Get supplier profile
+      # security:
+      #   - bearerAuth: []
+      responses:
+        '200':
+          description: Supplier profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supplier'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Suppliers
+      summary: Update supplier profile
+      description: Update supplier contact and business details
+      # security:
+      #   - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSupplierRequest'
+      responses:
+        '200':
+          description: Updated supplier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supplier'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Version conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /suppliers/{supplierId}/audit:
+    parameters:
+      - $ref: '#/components/parameters/supplierId'
+    get:
+      tags:
+        - Suppliers
+      summary: Get audit trail for a supplier (admin)
+      # security:
+      #   - bearerAuth: []
+      responses:
+        '200':
+          description: List of audit entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEntry'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /purchase-orders:
+    get:
+      tags:
+        - PurchaseOrders
+      summary: List purchase orders
+      description: List POs (for admin). Suppliers should use /suppliers/{supplierId}/purchase-orders
+      # security:
+      #   - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: supplier_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Paginated list of purchase orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PurchaseOrder'
+    post:
+      tags:
+        - PurchaseOrders
+      summary: Create a new purchase order
+      description: Creates a new PO assigned to a specific supplier
+      # security:
+      #   - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePurchaseOrderRequest'
+      responses:
+        '201':
+          description: Purchase Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+        '400':
+          description: Invalid request payload (validation error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /suppliers/{supplierId}/purchase-orders:
+    parameters:
+      - $ref: '#/components/parameters/supplierId'
+    get:
+      tags:
+        - PurchaseOrders
+      summary: List purchase orders for a specific supplier
+      # security:
+      #   - bearerAuth: []
+      responses:
+        '200':
+          description: List of purchase orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PurchaseOrder'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /purchase-orders/{poId}:
+    parameters:
+      - $ref: '#/components/parameters/poId'
+    get:
+      tags:
+        - PurchaseOrders
+      summary: Get a specific purchase order
+      # security:
+      #   - bearerAuth: []
+      responses:
+        '200':
+          description: Purchase Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - PurchaseOrders
+      summary: Update PO status
+      description: Used by a supplier to update the status (e.g., accept, ship)
+      # security:
+      #   - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePurchaseOrderStatusRequest'
+      responses:
+        '200':
+          description: Updated Purchase Order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Version conflict or invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
