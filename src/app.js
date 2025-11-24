@@ -8,7 +8,7 @@ const swaggerUi = require("swagger-ui-express");
 const OpenApiValidator = require("express-openapi-validator");
 
 // We will create this file in the next step
-const supplierRouter = require("./routes/suppliers"); 
+const supplierRouter = require("./routes/suppliers");
 require("dotenv").config();
 const { errorHandler } = require("./middleware/error");
 
@@ -56,14 +56,5 @@ app.use((req, res) => {
 
 // Centralized error handler (the file you created in Step 11)
 app.use(errorHandler);
-
-// --- Start the Server ---
-const port = process.env.PORT || 3001; // Reads the port from your .env file
-app.listen(port, () => {
-  // eslint-disable-next-line no-console
-  console.log(
-    `Supplier Management Service running on http://localhost:${port} (docs at /docs)`
-  );
-});
 
 module.exports = app;
