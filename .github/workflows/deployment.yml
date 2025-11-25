@@ -11,6 +11,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build . -t jude2001/ms-supplier
+      - name: Debug Secrets
+        run: |
+          if [ -z "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
+            echo "ERROR: DOCKERHUB_USERNAME is empty!"
+          else
+            echo "SUCCESS: DOCKERHUB_USERNAME is set."
+          fi
+          if [ -z "${{ secrets.DOCKERHUB_PASSWORD }}" ]; then
+            echo "ERROR: DOCKERHUB_PASSWORD is empty!"
+          else
+            echo "SUCCESS: DOCKERHUB_PASSWORD is set."
+          fi
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
