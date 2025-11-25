@@ -14,13 +14,11 @@ function errorHandler(err, req, res, _next) {
   }
 
   if (err.code === "ECONNREFUSED") {
-    return res
-      .status(503)
-      .json({
-        code: "DB_UNAVAILABLE",
-        message: "Database unavailable",
-        request_id: req.headers["x-request-id"] || undefined,
-      });
+    return res.status(503).json({
+      code: "DB_UNAVAILABLE",
+      message: "Database unavailable",
+      request_id: req.headers["x-request-id"] || undefined,
+    });
   }
 
   const status = err.status || 500;

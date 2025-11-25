@@ -103,19 +103,16 @@ router.post("/purchase-orders", async (req, res, next) => {
 });
 
 // GET /suppliers/{supplierId}/purchase-orders (Supplier-specific route)
-router.get(
-  "/suppliers/:supplierId/purchase-orders",
-  async (req, res, next) => {
-    try {
-      const result = await suppliersService.listPurchaseOrdersForSupplier(
-        req.params.supplierId
-      );
-      return res.json(result);
-    } catch (e) {
-      next(e);
-    }
+router.get("/suppliers/:supplierId/purchase-orders", async (req, res, next) => {
+  try {
+    const result = await suppliersService.listPurchaseOrdersForSupplier(
+      req.params.supplierId
+    );
+    return res.json(result);
+  } catch (e) {
+    next(e);
   }
-);
+});
 
 // GET /purchase-orders/{poId}
 router.get("/purchase-orders/:poId", async (req, res, next) => {
