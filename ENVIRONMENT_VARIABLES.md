@@ -7,6 +7,8 @@ This document outlines the environment variables required to configure and run t
 | Variable | Description | Required | Default | Example |
 |----------|-------------|----------|---------|---------|
 | `DATABASE_URL` | Connection string for the PostgreSQL database. Must be in the format `postgresql://USER:PASSWORD@HOST:PORT/DBNAME`. | **Yes** | N/A | `postgresql://postgres:postgres@localhost:5432/ms_supplier` |
+| `ASGARDIO_ISSUER_BASE_URL` | The Issuer URL of your Asgardio organization. | **Yes** | N/A | `https://api.asgardio.io/t/<org_name>/oauth2/token` |
+| `ASGARDIO_AUDIENCE` | The Client ID of your Asgardio application. | **Yes** | N/A | `your-client-id` |
 
 ## Optional Variables
 

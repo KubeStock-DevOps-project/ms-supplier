@@ -41,8 +41,11 @@ app.use(
 );
 
 // --- Your Application Routes ---
+const checkJwt = require("./middleware/auth");
+
+// Protect all supplier routes
 // All your supplier routes will be prefixed with /
-app.use("/", supplierRouter);
+app.use("/", checkJwt, supplierRouter);
 
 // --- Error Handling ---
 // 404 handler for any routes that don't exist
