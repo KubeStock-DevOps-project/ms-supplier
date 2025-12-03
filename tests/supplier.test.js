@@ -5,6 +5,9 @@ const prisma = require("../prisma/prisma");
 
 // Mock the Prisma client
 jest.mock("../prisma/prisma", () => mockDeep());
+jest.mock("express-oauth2-jwt-bearer", () => ({
+  auth: () => (req, res, next) => next(),
+}));
 
 describe("Supplier API", () => {
   beforeEach(() => {
