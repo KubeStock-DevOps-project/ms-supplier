@@ -31,6 +31,8 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ms-supplier
           IMAGE_TAG: ${{ github.sha }}
+          ASGARDIO_AUDIENCE: ${{ secrets.ASGARDIO_AUDIENCE }}
+          ASGARDIO_ISSUER_BASE_URL: ${{ secrets.ASGARDIO_ISSUER_BASE_URL }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
