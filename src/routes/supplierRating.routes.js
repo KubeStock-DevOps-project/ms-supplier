@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const supplierRatingController = require("../controllers/supplierRating.controller");
-const { authenticateAsgardeo } = require("../middlewares/token.middleware");
+const { authenticate } = require("../middlewares/token.middleware");
 
 // All rating endpoints require authentication
-router.use(authenticateAsgardeo);
+router.use(authenticate);
 
 // Create rating for a supplier (admin/warehouse staff only)
 router.post("/:supplier_id/ratings", supplierRatingController.createRating);

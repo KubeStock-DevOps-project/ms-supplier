@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const supplierController = require("../controllers/supplier.controller");
 const {
-  authenticateAsgardeo,
+  authenticate,
   authorizeRoles,
 } = require("../middlewares/token.middleware");
 
@@ -17,14 +17,14 @@ router.get("/", supplierController.getAllSuppliers);
 // Get current supplier's profile (for supplier users) - protected route
 router.get(
   "/profile/me",
-  authenticateAsgardeo,
+  authenticate,
   supplierController.getMyProfile
 );
 
 // Update supplier profile (for supplier users) - protected route
 router.put(
   "/profile/me",
-  authenticateAsgardeo,
+  authenticate,
   supplierController.updateMyProfile
 );
 
