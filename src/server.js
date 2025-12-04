@@ -60,10 +60,10 @@ app.get("/metrics", async (req, res) => {
   }
 });
 
-// All routes under /api/supplier prefix for consistent routing
-app.use("/api/supplier/ratings", supplierRatingRoutes);
-app.use("/api/supplier/purchase-orders", purchaseOrderRoutes);
-app.use("/api/supplier", supplierRoutes);
+// Routes - gateway strips /api/supplier prefix before forwarding
+app.use("/ratings", supplierRatingRoutes);
+app.use("/purchase-orders", purchaseOrderRoutes);
+app.use("/", supplierRoutes);
 
 // Error handling
 app.use(notFoundHandler);
